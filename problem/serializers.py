@@ -22,7 +22,7 @@ class CreateProblemCodeTemplateSerializer(serializers.Serializer):
 
 
 class CreateOrEditProblemSerializer(serializers.Serializer):
-    # _id = serializers.CharField(max_length=32, allow_blank=True, allow_null=True)
+    _id = serializers.CharField(max_length=32, allow_blank=True, allow_null=True)
     title = serializers.CharField(max_length=1024)
     description = serializers.CharField()
     code_num = serializers.IntegerField(min_value=1)
@@ -30,7 +30,7 @@ class CreateOrEditProblemSerializer(serializers.Serializer):
     tags = serializers.ListField(child=serializers.CharField(max_length=32), allow_empty=False)
     # hint = serializers.CharField(allow_blank=True, allow_null=True)
     # share_submission = serializers.BooleanField(default=False)
-    # languages = LanguageNameMultiChoiceField()
+    languages = LanguageNameMultiChoiceField()
     # lab_config = serializers.JSONField()
     # total_score = serializers.IntegerField(default=0)
     # visible = serializers.BooleanField(default=True)

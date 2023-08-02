@@ -15,4 +15,12 @@ elif [[ $cmd == "migrate" ]]; then
 elif [[ $cmd == "clean" ]]; then
   find . -type d -name 'migrations' -not -path './venv/*' | xargs rm -r;
   rm onl.db
+elif [[ $cmd == "rebuild" ]]; then
+  find . -type d -name 'migrations' -not -path './venv/*' | xargs rm -r;
+  rm onl.db
+  for app in "${apps[@]}"; do
+    python3 manage.py makemigrations $app
+  done
+  python3 manage.py migrate
+  python manage.py inituser --username=root --password=rootroot --action=create_super_admin
 fi

@@ -19,19 +19,20 @@ class Problem(models.Model):
     contest = models.ForeignKey(Contest, null=True, on_delete=models.CASCADE)
     # for contest problem
     lab_id = models.IntegerField(null=True)
-    lab_config = models.JSONField(default=dict)
+    # lab_config = models.JSONField(default=dict)
     is_public = models.BooleanField(default=False)
     title = models.TextField()
-    # HTML
+    # code segment filenames to be substituded
     description = RichTextField()
-    hint = RichTextField(null=True)
+    # hint = RichTextField(null=True)
     languages = JSONField()
     #需要的节点数量
-    vm_num = models.IntegerField()
+    vm_num = models.IntegerField(default=1)
     #各个节点所需要的端口数量
     port_num = models.JSONField(default=list)
     #学生需要编写的代码段数量
     code_num = models.IntegerField()
+    code_names = models.JSONField()
     template = JSONField(null=True)
     create_time = models.DateTimeField(auto_now_add=True)
     # we can not use auto_now here

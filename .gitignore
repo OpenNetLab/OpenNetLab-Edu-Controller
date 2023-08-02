@@ -5,3 +5,4 @@ __pycache__
 *.pyc
 docker_deploy
 migrations
+onl.db
