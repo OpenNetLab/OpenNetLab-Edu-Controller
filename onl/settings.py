@@ -13,17 +13,64 @@ import os
 import raven
 from copy import deepcopy
 from utils.shortcuts import get_env
+from os.path import dirname, abspath
 
 production_env = get_env("ONL_ENV", "dev") == "production"
+
+
 if production_env:
-    from .production_settings import *
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': "onl.db",
+        }
+    }
+    # DATABASES = {
+    #     'default': {
+    #         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #         'HOST': get_env("POSTGRES_HOST", "oj-postgres"),
+    #         'PORT': get_env("POSTGRES_PORT", "5432"),
+    #         'NAME': get_env("POSTGRES_DB"),
+    #         'USER': get_env("POSTGRES_USER"),
+    #         'PASSWORD': get_env("POSTGRES_PASSWORD")
+    #     }
+    # }
+    REDIS_CONF = {
+        "host": get_env("REDIS_HOST", "oj-redis"),
+        "port": get_env("REDIS_PORT", "6379")
+    }
+    DEBUG = False
+    ALLOWED_HOSTS = ['*']
+    DATA_DIR = "/data"
 else:
-    from .dev_settings import *
+    # the root directory of onl controller
+    BASE_DIR = dirname(dirname(abspath(__file__)))
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': "onl.db",
+        }
+    }
+    # DATABASES = {
+    #     'default': {
+    #         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #         'HOST': '127.0.0.1',
+    #         'PORT': 5435,
+    #         'NAME': "onlinejudge",
+    #         'USER': "onlinejudge",
+    #         'PASSWORD': 'onlinejudge'
+    #     }
+    # }
+    REDIS_CONF = {
+        "host": '127.0.0.1',
+        "port": 6380
+    }
+    DEBUG = True
+    ALLOWED_HOSTS = ["*"]
+    DATA_DIR = f"{BASE_DIR}/data"
 
 with open(os.path.join(DATA_DIR, "config", "secret.key"), "r") as f:
     SECRET_KEY = f.read()
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Applications
 VENDOR_APPS = [
