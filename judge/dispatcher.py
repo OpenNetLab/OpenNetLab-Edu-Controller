@@ -12,7 +12,6 @@ from conf.models import JudgeServer
 from contest.models import ContestStatus
 from options.options import SysOptions
 from problem.models import Problem
-from problem.utils import parse_problem_template
 from submission.models import JudgeStatus, Submission
 from utils.cache import cache
 from utils.constants import CacheKey
@@ -32,7 +31,7 @@ def process_pending_task():
 
 
 # 选择运行节点
-class ChooseJudgeServer:
+class JudgeServerSelector:
     def __init__(self, vm_num, ports):
         self.vm_num = vm_num
         self.ports = ports
@@ -90,7 +89,6 @@ class DispatcherBase(object):
             logger.exception(e)
 
 
-# 任务下发
 class JudgeDispatcher(DispatcherBase):
     def __init__(self, submission_id, problem_id):
         super().__init__()
@@ -128,18 +126,17 @@ class JudgeDispatcher(DispatcherBase):
         code_list = self.submission.code_list
 
         data = {
+            # "language_config": self.problem.languages,
+            # "lab_config": self.problem.lab_config,
             "submission_id": self.submission.id,
-            "language_config": self.problem.languages,
-            "lab_config": self.problem.lab_config,
             "src": code_list
         }
 
-        # fix contest
-        if self.problem.contest_id:
+        if self.problem.contest:
             data["lab_id"] = self.problem.lab_id
         else:
-            data["lab_id"] = self.problem.id
-        with ChooseJudgeServer(self.problem.vm_num, self.problem.port_num) as resources:
+            data["lab_id"] = self.problem._id
+        with JudgeServerSelector(self.problem.vm_num, self.problem.port_num) as resources:
             # queue
             if not resources:
                 data = {"submission_id": self.submission.id, "problem_id": self.problem.id}

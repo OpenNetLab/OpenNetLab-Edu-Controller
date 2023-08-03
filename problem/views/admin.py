@@ -3,7 +3,6 @@ import zipfile
 
 from django.db.models import Q
 from django.http import FileResponse
-from django.views.generic import View
 
 from account.decorators import problem_permission_required, ensure_created_by, ensure_managed_by
 from contest.models import Contest, ContestStatus
@@ -11,6 +10,8 @@ from submission.models import Submission, JudgeStatus
 from utils.api import APIView, validate_serializer
 from utils.shortcuts import rand_str
 from utils.tasks import delete_files
+from judge.testing import ZipFileUploader
+
 from ..models import Problem, ProblemTag
 from ..serializers import *
 
@@ -36,14 +37,21 @@ class ProblemAPI(ProblemFormBase):
             return self.error("Display ID already exists")
 
         problem_data = {}
-        needed_fields = ["_id", "title", "languages", "description", "code_num", "code_names"]
-        for field in needed_fields:
+        print(request.POST)
+        str_fields = ["_id", "title", "languages", "description"]
+        for field in str_fields:
             problem_data[field] = request.POST.get(field)
-        tags = request.POST.get("tags")
+        problem_data["code_num"] = int(request.POST.get("code_num"))
+        problem_data["code_names"] = request.POST.getlist("code_names")
+        print(problem_data)
+        tags = request.POST.getlist("tags")
         problem_data["created_by"] = request.user
         problem = Problem.objects.create(**problem_data)
 
-        uploaded_file = request.FILES.get('file')
+        uploader = ZipFileUploader(request.FILES.get('file'), problem)
+        valid = uploader.upload()
+        if not valid:
+            return uploader.error_message
 
         # create inexist tags
         for item in tags:
