@@ -20,7 +20,7 @@ class Problem(models.Model):
     # for contest problem
     lab_id = models.IntegerField(null=True)
     # lab_config = models.JSONField(default=dict)
-    is_public = models.BooleanField(default=False)
+    is_public = models.BooleanField(default=True)
     title = models.TextField()
     # code segment filenames to be substituded
     description = RichTextField()

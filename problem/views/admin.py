@@ -1,62 +1,51 @@
-import hashlib
 import json
-import os
-# import shutil
-import tempfile
 import zipfile
-from wsgiref.util import FileWrapper
 
-from django.conf import settings
-from django.db import transaction
 from django.db.models import Q
-from django.http import StreamingHttpResponse, FileResponse
+from django.http import FileResponse
+from django.views.generic import View
 
 from account.decorators import problem_permission_required, ensure_created_by, ensure_managed_by
 from contest.models import Contest, ContestStatus
-from options.options import SysOptions
 from submission.models import Submission, JudgeStatus
-from utils.api import APIView, CSRFExemptAPIView, validate_serializer, APIError
-from utils.shortcuts import rand_str, natural_sort_key
+from utils.api import APIView, validate_serializer
+from utils.shortcuts import rand_str
 from utils.tasks import delete_files
 from ..models import Problem, ProblemTag
-from ..serializers import (CreateContestProblemSerializer,
-                           CreateProblemSerializer, EditProblemSerializer, EditContestProblemSerializer,
-                           ProblemAdminSerializer, ContestProblemMakePublicSerializer,
-                           AddContestProblemSerializer, ExportProblemSerializer,
-                           ExportProblemRequestSerialzier, UploadProblemForm, ImportProblemSerializer,)
-from ..utils import TEMPLATE_BASE, build_problem_template
-
-
-
-
+from ..serializers import *
 
 class ProblemBase(APIView):
     def common_checks(self, request):
         data = request.data
         data["languages"] = list(data["languages"])
+        
 
+class ProblemFormBase(APIView):
+    # use View's dispatch function
+    request_parsers = None
 
-class ProblemAPI(ProblemBase):
+class ProblemAPI(ProblemFormBase):
+    # @validate_serializer(CreateProblemSerializer)
     @problem_permission_required
-    @validate_serializer(CreateProblemSerializer)
     def post(self, request):
-        data = request.data
-        # print(data)
-        _id = data["_id"]
+        # construct problem data from WSGIRequest
+        _id = request.POST.get("_id")
         if not _id:
             return self.error("Display ID is required")
         if Problem.objects.filter(_id=_id, contest_id__isnull=True).exists():
             return self.error("Display ID already exists")
 
-        error_info = self.common_checks(request)
-        if error_info:
-            return self.error(error_info)
+        problem_data = {}
+        needed_fields = ["_id", "title", "languages", "description", "code_num", "code_names"]
+        for field in needed_fields:
+            problem_data[field] = request.POST.get(field)
+        tags = request.POST.get("tags")
+        problem_data["created_by"] = request.user
+        problem = Problem.objects.create(**problem_data)
 
-        # todo check filename and score info
-        tags = data.pop("tags")
-        data["created_by"] = request.user
-        problem = Problem.objects.create(**data)
+        uploaded_file = request.FILES.get('file')
 
+        # create inexist tags
         for item in tags:
             try:
                 tag = ProblemTag.objects.get(name=item)
@@ -328,17 +317,18 @@ class AddContestProblemAPI(APIView):
             data["description"] = problem.description
         data["visible"] = True
         data["languages"] = problem.languages
-        if "hint" not in data:
-            data["hint"] = problem.hint
-        lab_config = data["lab_config"]
-        data["lab_config"] = problem.lab_config
-        if lab_config:
-            for k, v in lab_config.items():
-                if k in data["lab_config"].keys():
-                    data["lab_config"][k] = v
+        # if "hint" not in data:
+        #     data["hint"] = problem.hint
+        # lab_config = data["lab_config"]
+        # data["lab_config"] = problem.lab_config
+        # if lab_config:
+        #     for k, v in lab_config.items():
+        #         if k in data["lab_config"].keys():
+        #             data["lab_config"][k] = v
         data["vm_num"] = problem.vm_num
         data["port_num"] = problem.vm_num
         data["code_num"] = problem.vm_num
+        
         tags = problem.tags.all()
         data["_id"] = data.pop("display_id")
         data["is_public"] = True

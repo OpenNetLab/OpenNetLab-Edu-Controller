@@ -31,6 +31,7 @@ class CreateOrEditProblemSerializer(serializers.Serializer):
     # hint = serializers.CharField(allow_blank=True, allow_null=True)
     # share_submission = serializers.BooleanField(default=False)
     languages = LanguageNameMultiChoiceField()
+    # file = serializers.FileField()
     # lab_config = serializers.JSONField()
     # total_score = serializers.IntegerField(default=0)
     # visible = serializers.BooleanField(default=True)
@@ -121,7 +122,7 @@ class AddContestProblemSerializer(serializers.Serializer):
     contest_id = serializers.IntegerField()
     problem_id = serializers.IntegerField()
     display_id = serializers.CharField()
-    lab_config = serializers.JSONField()
+    # lab_config = serializers.JSONField()
 
 
 class ExportProblemRequestSerialzier(serializers.Serializer):

@@ -22,6 +22,7 @@ class ContentType(object):
     json_response = "application/json;charset=UTF-8"
     url_encoded_request = "application/x-www-form-urlencoded"
     binary_response = "application/octet-stream"
+    form_data_request = "multipart/form-data"
 
 
 class JSONParser(object):
