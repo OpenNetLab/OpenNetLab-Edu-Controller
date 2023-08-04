@@ -1,3 +1,4 @@
+import json
 import zipfile
 import os
 import shutil
@@ -7,13 +8,23 @@ from django.core.files.storage import FileSystemStorage
 
 from onl.settings import DATA_DIR
 from problem.models import Problem
-from submission.models import Submission
+from submission.models import JudgeStatus, Submission
 
 
 PROBLEM_DIR = "problems"
 SUBMISSION_DIR = "submissions"
 ZIPFILE_DIR = "zips"
 
+TESTCASE_NAME = "testcases.json"
+TESTER_NAME = "tester"
+
+def create_new_problem_from_template(new_problem_id: str, old_problem_id: str):
+    old_path = PathManager.problem_dir(old_problem_id)
+    new_path = PathManager.problem_dir(new_problem_id)
+    os.makedirs(new_path, exist_ok=True)
+    for filename in os.listdir(old_path):
+        shutil.copyfile(join(old_path, filename), join(new_path, filename))
+    print(f'create problem instance {new_path}')
 
 class PathManager:
     @staticmethod
@@ -21,8 +32,8 @@ class PathManager:
         return join(DATA_DIR, PROBLEM_DIR, problem_id)
 
     @staticmethod
-    def submission_dir(submission_id: str) -> str:
-        return join(DATA_DIR, SUBMISSION_DIR, submission_id)
+    def submission_dir(user_id: str, submission_id: str) -> str:
+        return join(DATA_DIR, SUBMISSION_DIR, user_id, submission_id)
 
     @staticmethod
     def zipfile_path(problem_id: str, zipfile_name: str) -> str:
@@ -104,15 +115,58 @@ class ZipFileUploader:
 
 
 class SubmissionTester:
-    def __init__(self, submit_id: str, problem_id: str):
-        self.submit_id = submit_id
-        self.problem_id = problem_id
-        self.submission_dir_path = PathManager.submission_dir(submit_id)
-        if not exists(self.submission_dir_path):
-            os.makedirs(self.submission_dir_path, exist_ok=True)
+    def __init__(self, submission: Submission):
+        self.sub = submission
+        self.sub_dirpath = PathManager.submission_dir(str(submission.user_id), submission.id)
+        if not exists(self.sub_dirpath):
+            os.makedirs(self.sub_dirpath, exist_ok=True)
+        prob_dir = PathManager.problem_dir(submission.problem._id) # use display id
+        if not exists(prob_dir):
+            raise Exception("problem dir {} not exists".format(prob_dir))
+        for filename in os.listdir(prob_dir):
+            shutil.copyfile(join(prob_dir, filename), self.sub_dirpath)
 
     def judge(self):
-        tester = join(self.submission_dir_path, "tester")
-        if not exists(tester):
-            raise Exception(f"running submission: tester {tester} not exists")
-        subprocess.run([tester, '--log', '--json'])
+        tester_path = join(self.sub_dirpath, TESTER_NAME)
+        if not exists(tester_path):
+            raise Exception("running submission: tester {} not exists".format(tester_path))
+        print(f"running {tester_path}")
+        subprocess.run([tester_path, '--log', '--json'])
+        log_path = join(self.sub_dirpath, 'logs')
+        if not exists(log_path):
+            raise Exception(f"logs path {log_path} not exists")
+        failed_info = []
+        with open(join(log_path, "results.txt")) as fp:
+            res = json.load(fp)
+            self.sub.grade = res['grade']
+            for idx in res['failed']:
+                log_fp = open(join(log_path, f"testcase{idx}.log"), "r")
+                testcase_fp = open(join(self.sub_dirpath, TESTCASE_NAME), "r")
+                testcase_json_data = json.load(testcase_fp)
+                if "config" in testcase_json_data:
+                    # global config
+                    config = testcase_json_data["config"]
+                else:
+                    cur_data = testcase_json_data["testcases"][idx] 
+                    if "config" in cur_data:
+                        # specific config for testcase
+                        config = ["config"]
+                    else:
+                        # no config
+                        config = None
+                displayed_test = {
+                    "input": testcase_json_data["testcases"][idx]["input"],
+                    "expected_output":testcase_json_data["testcases"][idx]["output"],
+                }
+                # config, "testcase"
+                failed_info.append({
+                    "config": config,
+                    "testcase_index": idx,
+                    "testcase": displayed_test,
+                    "log": log_fp.read()
+                })
+                log_fp.close()
+                testcase_fp.close()
+        self.sub.failed_info = failed_info
+        self.sub.result = JudgeStatus.FINISHED
+        self.sub.save()

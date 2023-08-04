@@ -225,8 +225,7 @@ _node_lang_config = {
 }
 
 languages = [
-    {"config": _c_lang_config, "spj": 
-     {"compile": _c_lang_spj_compile, "config": _c_lang_spj_config},
+    {"config": _c_lang_config, "spj": {"compile": _c_lang_spj_compile, "config": _c_lang_spj_config},
      "name": "C", "description": "GCC 9.4", "content_type": "text/x-csrc"},
     {"config": _cpp_lang_config, "spj": {"compile": _cpp_lang_spj_compile, "config": _cpp_lang_spj_config},
      "name": "C++", "description": "G++ 9.4", "content_type": "text/x-c++src"},

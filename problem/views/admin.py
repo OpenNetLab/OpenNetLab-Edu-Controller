@@ -10,7 +10,7 @@ from submission.models import Submission, JudgeStatus
 from utils.api import APIView, validate_serializer
 from utils.shortcuts import rand_str
 from utils.tasks import delete_files
-from judge.testing import ZipFileUploader
+from judge.testing import ZipFileUploader, create_new_problem_from_template
 
 from ..models import Problem, ProblemTag
 from ..serializers import *
@@ -300,7 +300,7 @@ class AddContestProblemAPI(APIView):
         data = request.data
         try:
             contest = Contest.objects.get(id=data["contest_id"])
-            problem = Problem.objects.get(id=data["problem_id"])
+            old_problem = Problem.objects.get(id=data["problem_id"])
         except (Contest.DoesNotExist, Problem.DoesNotExist):
             return self.error("Contest or Problem does not exist")
         data["lab_id"] = data.pop("problem_id")
@@ -311,19 +311,22 @@ class AddContestProblemAPI(APIView):
         if Problem.objects.filter(contest=contest, _id=data["display_id"]).exists():
             return self.error("Duplicate display id in this contest")
         if "title" not in data:
-            data["title"] = problem.title
+            data["title"] = old_problem.title
         if "description" not in data:
-            data["description"] = problem.description
+            data["description"] = old_problem.description
         data["visible"] = True
         data["is_public"] = True
-        data["code_num"] = problem.code_num
-        data["code_names"] = problem.code_names
+        data["code_num"] = old_problem.code_num
+        data["code_names"] = old_problem.code_names
         
-        tags = problem.tags.all()
+        tags = old_problem.tags.all()
         data["_id"] = data.pop("display_id")
         data["submission_number"] = data["accepted_number"] = 0
-        problem = Problem.objects.create(**data)
-        problem.tags.set(tags)
+        new_problem = Problem.objects.create(**data)
+        new_problem.tags.set(tags)
+
+        create_new_problem_from_template(new_problem._id, old_problem._id)
+
         return self.success()
 
 
@@ -334,7 +337,7 @@ class ExportProblemAPI(APIView):
             submission = Submission.objects.filter(problem=problem,
                                                    user_id=user.id,
                                                    language=item,
-                                                   result=JudgeStatus.ACCEPTED).order_by("-create_time").first()
+                                                   result=JudgeStatus.FINISHED).order_by("-create_time").first()
             if submission:
                 ret.append({"language": submission.language, "code": submission.code})
         return ret
