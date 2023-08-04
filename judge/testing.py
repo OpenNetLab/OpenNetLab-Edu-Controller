@@ -1,5 +1,6 @@
 import zipfile
 import os
+import shutil
 import subprocess
 from os.path import isdir, join, exists, dirname
 from django.core.files.storage import FileSystemStorage
@@ -84,15 +85,20 @@ class ZipFileUploader:
                 addtional_dir = join(self.problem_dir_path, dir)
                 valid = self.check_files_in_dir(addtional_dir)
                 if valid:
-                    os.system(f"cp {addtional_dir}/* {addtional_dir}/..")
-                    os.system(f"rm -rf {addtional_dir}")
+                    print(f"extract to addtional dir {addtional_dir}")
+                    for filename in os.listdir(addtional_dir):
+                        shutil.move(join(addtional_dir, filename), self.problem_dir_path)
+                    shutil.rmtree(addtional_dir)
+                    print(f"remove {addtional_dir}")
         else:
             valid = self.check_files_in_dir(self.problem_dir_path)
 
         if not valid:
             print(self._error_message)
-            os.system(f"rm -rf {self.problem_dir_path}")
-        os.system(f"rm -rf {dirname(self.zip_file_path)}")
+            shutil.rmtree(self.problem_dir_path)
+            print(f"remove {self.problem_dir_path}")
+        shutil.rmtree(dirname(self.zip_file_path))
+        print(f"remove {dirname(self.zip_file_path)}")
 
         return valid
 
@@ -103,10 +109,9 @@ class SubmissionTester:
         self.problem_id = problem_id
         self.submission_dir_path = PathManager.submission_dir(submit_id)
         if not exists(self.submission_dir_path):
-            os.system(f"mkdir -p {self.submission_dir_path}")
+            os.makedirs(self.submission_dir_path, exist_ok=True)
 
     def judge(self):
-        os.system(f"cp {PathManager.problem_dir(problem_id=self.problem_id)}/* {self.submission_dir_path}")
         tester = join(self.submission_dir_path, "tester")
         if not exists(tester):
             raise Exception(f"running submission: tester {tester} not exists")
