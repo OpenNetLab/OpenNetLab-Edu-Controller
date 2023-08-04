@@ -9,15 +9,10 @@ from utils.shortcuts import rand_str
 
 
 class JudgeStatus:
-    COMPILE_ERROR = -2
-    WRONG_ANSWER = -1
-    ACCEPTED = 0
-    RUNTIME_ERROR = 1
-    SYSTEM_ERROR = 2
-    NETWORK_TIMEOUT = 3
-    PENDING = 4
-    JUDGING = 5
-    PARTIALLY_ACCEPTED = 6
+    PENDING      = 0
+    JUDGING      = 1
+    FINISHED     = 2
+    SYSTEM_ERROR = 3
 
 
 class Submission(models.Model):
@@ -31,12 +26,10 @@ class Submission(models.Model):
     server_list = models.JSONField(default=list)
     ports_list = models.JSONField(default=dict)
     result = models.IntegerField(db_index=True, default=JudgeStatus.PENDING)
-    # 从JudgeServer返回的判题详情
-    info = JSONField(default=dict)
+    grade = models.IntegerField(default=0)
+    failed_info = JSONField(default=list)
     language = models.TextField()
     shared = models.BooleanField(default=False)
-    # 存储该提交所用时间和内存值，方便提交列表显示
-    # {time_cost: "", memory_cost: "", err_info: "", score: 0}
     ip = models.TextField(null=True)
 
     def check_user_permission(self, user, check_share=True):

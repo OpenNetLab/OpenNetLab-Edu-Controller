@@ -6,7 +6,6 @@ from utils.serializers import LanguageNameChoiceField
 class CreateSubmissionSerializer(serializers.Serializer):
     problem_id = serializers.IntegerField()
     language = LanguageNameChoiceField()
-    #多个代码段
     code_list = serializers.ListField(child=serializers.CharField(max_length=1024 * 1024), allow_empty=False)
     contest_id = serializers.IntegerField(required=False)
 
