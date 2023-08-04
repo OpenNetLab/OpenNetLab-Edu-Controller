@@ -23,8 +23,33 @@ def create_new_problem_from_template(new_problem_id: str, old_problem_id: str):
     new_path = PathManager.problem_dir(new_problem_id)
     os.makedirs(new_path, exist_ok=True)
     for filename in os.listdir(old_path):
-        shutil.copyfile(join(old_path, filename), join(new_path, filename))
+        shutil.copy2(join(old_path, filename), new_path)
     print(f'create problem instance {new_path}')
+
+def make_file_executable(file_path):
+    try:
+        # Define the executable permission in octal format (e.g., 0o755).
+        # This gives read, write, and execute permissions to the owner,
+        # and read and execute permissions to the group and others.
+        executable_permission = 0o755
+
+        # Change the file's permission to make it executable.
+        os.chmod(file_path, executable_permission)
+        return True
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
+
+def run_command_with_sudo(command):
+    try:
+        # Use the 'sudo' command to execute the given command with elevated privileges.
+        result = subprocess.run(['sudo'] + command, capture_output=True, text=True, check=True)
+        return result
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        return None
+
 
 class PathManager:
     @staticmethod
@@ -111,6 +136,8 @@ class ZipFileUploader:
         shutil.rmtree(dirname(self.zip_file_path))
         print(f"remove {dirname(self.zip_file_path)}")
 
+        make_file_executable(join(self.problem_dir_path, TESTER_NAME))
+
         return valid
 
 
@@ -121,22 +148,31 @@ class SubmissionTester:
         if not exists(self.sub_dirpath):
             os.makedirs(self.sub_dirpath, exist_ok=True)
         prob_dir = PathManager.problem_dir(submission.problem._id) # use display id
+        print('problem id:', submission.problem._id)
+        print('problem dir:', prob_dir)
         if not exists(prob_dir):
             raise Exception("problem dir {} not exists".format(prob_dir))
         for filename in os.listdir(prob_dir):
-            shutil.copyfile(join(prob_dir, filename), self.sub_dirpath)
+            print(f'copy {join(prob_dir, filename)} to {self.sub_dirpath}')
+            shutil.copy2(join(prob_dir, filename), self.sub_dirpath)
 
     def judge(self):
         tester_path = join(self.sub_dirpath, TESTER_NAME)
         if not exists(tester_path):
             raise Exception("running submission: tester {} not exists".format(tester_path))
         print(f"running {tester_path}")
-        subprocess.run([tester_path, '--log', '--json'])
+        result = run_command_with_sudo([tester_path, "--log", "--json"])
+        if result:
+            print("Command output:")
+            print(result.stdout)
+        else:
+            print("Command execution failed.")
+
         log_path = join(self.sub_dirpath, 'logs')
         if not exists(log_path):
             raise Exception(f"logs path {log_path} not exists")
         failed_info = []
-        with open(join(log_path, "results.txt")) as fp:
+        with open(join(log_path, "results.json")) as fp:
             res = json.load(fp)
             self.sub.grade = res['grade']
             for idx in res['failed']:

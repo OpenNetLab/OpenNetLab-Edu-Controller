@@ -41,7 +41,7 @@ class SubmissionListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Submission
-        exclude = ("info", "contest", "code_list", "ip")
+        exclude = ("contest", "code_list", "ip")
 
     def get_show_link(self, obj):
         # 没传user或为匿名user

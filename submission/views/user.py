@@ -2,21 +2,18 @@ import ipaddress
 import hashlib
 import requests
 import logging
-import json
-from os import path
-from datetime import datetime
 from django.db import transaction
 
 from account.decorators import login_required, check_contest_permission
 from account.models import User, UserProfile
 from conf.models import JudgeServer
 from contest.models import Contest, ContestStatus
+from judge.testing import SubmissionTester
 from options.options import SysOptions
 from problem.models import Problem
 from judge.tasks import local_judge_task
 from judge.dispatcher import process_pending_task
 from judge.dispatcher import JudgeStatus
-from judge.testing import PathManager
 from utils.api import APIView, validate_serializer, CSRFExemptAPIView
 from utils.cache import cache
 from utils.throttling import TokenBucket
@@ -30,23 +27,6 @@ from ..serializers import (
 from ..serializers import SubmissionSafeModelSerializer, SubmissionListSerializer
 
 logger = logging.getLogger(__name__)
-
-def update_submission_status(submission: Submission):
-    log_path = path.join(PathManager.submission_dir(submission.id), 'logs')
-    if path.exists(log_path):
-        submission.result = JudgeStatus.FINISHED
-        failed_info = []
-        with open(path.join(log_path, "results.txt")) as fp:
-            res = json.load(fp)
-            submission.grade = res['grade']
-            for idx in res['failed']:
-                with open(path.join(log_path, f"testcase{idx}.log")) as log_fp:
-                    failed_info.append({
-                        'testcase_index': idx,
-                        'log': log_fp.read()
-                    })
-        submission.failed_info = failed_info
-        submission.save()
 
 class SubmissionAPI(APIView):
     def __init__(self, **kwargs):
@@ -143,6 +123,8 @@ class SubmissionAPI(APIView):
 
         # execute judge task in dramatiq
         # local_judge_task.send(submission.id, problem._id)
+        tester = SubmissionTester(submission)
+        tester.judge()
 
         if hide_id:
             return self.success()
@@ -166,7 +148,8 @@ class SubmissionAPI(APIView):
             return self.error("No permission for this submission")
 
         if submission.result in [JudgeStatus.PENDING, JudgeStatus.JUDGING]:
-            update_submission_status(submission)
+            # update_submission_status(submission)
+            pass
 
         submission_data = SubmissionSafeModelSerializer(submission).data
         submission_data["can_unshare"] = submission.check_user_permission(
@@ -216,7 +199,8 @@ class SubmissionListAPI(APIView):
 
         for submission in submissions:
             if submission.result in [JudgeStatus.PENDING, JudgeStatus.JUDGING]:
-                update_submission_status(submission)
+                # update_submission_status(submission)
+                pass
 
         problem_id = request.GET.get("problem_id")
         result = request.GET.get("result")
@@ -266,7 +250,8 @@ class ContestSubmissionListAPI(APIView):
         )
         for submission in submissions:
             if submission.result in [JudgeStatus.PENDING, JudgeStatus.JUDGING]:
-                update_submission_status(submission)
+                # update_submission_status(submission)
+                pass
 
         problem_id = request.GET.get("problem_id")
         result = request.GET.get("result")
