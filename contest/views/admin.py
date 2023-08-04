@@ -31,7 +31,10 @@ class ContestAPI(APIView):
         data["created_by"] = request.user
         if "contest_admin" not in data:
             data["contest_admin"] = list
-        data["contest_admin"].append(str(request.user.id))
+        for user_name in data["contest_admin"]:
+            if not User.objects.filter(username=user_name).exists():
+                return self.error(f"User:{user_name} not exist")
+        # data["contest_admin"].append(str(request.user.id))
         if data["end_time"] <= data["start_time"]:
             return self.error("Start time must occur earlier than end time")
         if data.get("password") and data["password"] == "":
@@ -56,9 +59,9 @@ class ContestAPI(APIView):
         data["end_time"] = dateutil.parser.parse(data["end_time"])
 
         if data["contest_admin"] and request.user == contest.created_by:
-            for user_id in data["contest_admin"]:
-                if not User.objects.filter(id=int(user_id)).exists():
-                    return self.error(f"User:{user_id} not exist")
+            for user_name in data["contest_admin"]:
+                if not User.objects.filter(username=user_name).exists():
+                    return self.error(f"User:{user_name} not exist")
         else:
             data["contest_admin"] = contest.contest_admin
 
