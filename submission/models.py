@@ -11,8 +11,10 @@ from utils.shortcuts import rand_str
 class JudgeStatus:
     PENDING      = 0
     JUDGING      = 1
-    FINISHED     = 2
-    SYSTEM_ERROR = 3
+    SYSTEM_ERROR = 2
+    ALL_PASSED   = 3
+    SOME_PASSED  = 4
+    ALL_FAILED   = 5
 
 
 class Submission(models.Model):

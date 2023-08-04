@@ -147,14 +147,18 @@ class SubmissionTester:
         self.sub_dirpath = PathManager.submission_dir(str(submission.user_id), submission.id)
         if not exists(self.sub_dirpath):
             os.makedirs(self.sub_dirpath, exist_ok=True)
-        prob_dir = PathManager.problem_dir(submission.problem._id) # use display id
-        print('problem id:', submission.problem._id)
-        print('problem dir:', prob_dir)
+        problem: Problem = submission.problem
+        prob_dir = PathManager.problem_dir(problem._id) # use display id
         if not exists(prob_dir):
             raise Exception("problem dir {} not exists".format(prob_dir))
         for filename in os.listdir(prob_dir):
-            print(f'copy {join(prob_dir, filename)} to {self.sub_dirpath}')
             shutil.copy2(join(prob_dir, filename), self.sub_dirpath)
+        for index, codename in enumerate(problem.code_names):
+            filecontent = submission.code_list[index]
+            codepath = join(self.sub_dirpath, codename)
+            with open(codepath, "w") as wfp:
+                print(f"substitude {codepath} with user implemented")
+                wfp.write(filecontent)
 
     def judge(self):
         tester_path = join(self.sub_dirpath, TESTER_NAME)
@@ -174,16 +178,18 @@ class SubmissionTester:
         failed_info = []
         with open(join(log_path, "results.json")) as fp:
             res = json.load(fp)
+            grade = res['grade']
             self.sub.grade = res['grade']
             for idx in res['failed']:
                 log_fp = open(join(log_path, f"testcase{idx}.log"), "r")
                 testcase_fp = open(join(self.sub_dirpath, TESTCASE_NAME), "r")
                 testcase_json_data = json.load(testcase_fp)
+                # notice the index here, logical index starts from 1
                 if "config" in testcase_json_data:
                     # global config
                     config = testcase_json_data["config"]
                 else:
-                    cur_data = testcase_json_data["testcases"][idx] 
+                    cur_data = testcase_json_data["testcases"][idx-1] 
                     if "config" in cur_data:
                         # specific config for testcase
                         config = ["config"]
@@ -191,8 +197,8 @@ class SubmissionTester:
                         # no config
                         config = None
                 displayed_test = {
-                    "input": testcase_json_data["testcases"][idx]["input"],
-                    "expected_output":testcase_json_data["testcases"][idx]["output"],
+                    "input": testcase_json_data["testcases"][idx-1]["input"],
+                    "expected_output":testcase_json_data["testcases"][idx-1]["output"],
                 }
                 # config, "testcase"
                 failed_info.append({
@@ -204,5 +210,10 @@ class SubmissionTester:
                 log_fp.close()
                 testcase_fp.close()
         self.sub.failed_info = failed_info
-        self.sub.result = JudgeStatus.FINISHED
+        if grade == 0:
+            self.sub.result = JudgeStatus.ALL_FAILED
+        elif grade == 100:
+            self.sub.result = JudgeStatus.ALL_PASSED
+        else:
+            self.sub.result = JudgeStatus.SOME_PASSED
         self.sub.save()

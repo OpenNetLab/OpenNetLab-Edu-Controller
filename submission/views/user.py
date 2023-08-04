@@ -70,7 +70,7 @@ class SubmissionAPI(APIView):
     @validate_serializer(CreateSubmissionSerializer)
     @login_required
     def post(self, request):
-        print(request.data)
+        # print(request.data)
         data = request.data
         hide_id = False
 
