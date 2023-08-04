@@ -25,7 +25,7 @@ class Problem(models.Model):
     # code segment filenames to be substituded
     description = RichTextField()
     # hint = RichTextField(null=True)
-    languages = JSONField()
+    languages = JSONField(default=["python"])
     #需要的节点数量
     vm_num = models.IntegerField(default=1)
     #各个节点所需要的端口数量

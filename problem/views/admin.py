@@ -18,7 +18,6 @@ from ..serializers import *
 class ProblemBase(APIView):
     def common_checks(self, request):
         data = request.data
-        data["languages"] = list(data["languages"])
         
 
 class ProblemFormBase(APIView):
@@ -38,7 +37,7 @@ class ProblemAPI(ProblemFormBase):
 
         problem_data = {}
         # print(request.POST)
-        str_fields = ["_id", "title", "languages", "description"]
+        str_fields = ["_id", "title", "description"]
         for field in str_fields:
             problem_data[field] = request.POST.get(field)
         problem_data["code_num"] = int(request.POST.get("code_num"))
@@ -101,12 +100,8 @@ class ProblemAPI(ProblemFormBase):
         if Problem.objects.exclude(id=problem_id).filter(_id=_id, contest_id__isnull=True).exists():
             return self.error("Display ID already exists")
 
-        error_info = self.common_checks(request)
-        if error_info:
-            return self.error(error_info)
         # todo check filename and score info
         tags = data.pop("tags")
-        data["languages"] = list(data["languages"])
 
         for k, v in data.items():
             setattr(problem, k, v)
@@ -138,7 +133,6 @@ class ProblemAPI(ProblemFormBase):
         problem.delete()
         return self.success()
 
-#针对于教师重新配置之后的Lab problem
 class ContestProblemAPI(ProblemBase):
     @validate_serializer(AddContestProblemSerializer)
     def post(self, request):
@@ -160,7 +154,6 @@ class ContestProblemAPI(ProblemBase):
         if "description" not in data:
             data["description"] = problem.description
         data["visible"] = True
-        data["languages"] = problem.languages
         if "hint" not in data:
             data["hint"] = problem.hint
         lab_config = data["lab_config"]
@@ -237,7 +230,6 @@ class ContestProblemAPI(ProblemBase):
             return self.error(error_info)
         # todo check filename and score info
         tags = data.pop("tags")
-        data["languages"] = list(data["languages"])
 
         for k, v in data.items():
             setattr(problem, k, v)
@@ -324,7 +316,6 @@ class AddContestProblemAPI(APIView):
             data["description"] = problem.description
         data["visible"] = True
         data["is_public"] = True
-        data["languages"] = problem.languages
         data["code_num"] = problem.code_num
         data["code_names"] = problem.code_names
         
