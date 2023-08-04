@@ -37,13 +37,13 @@ class ProblemAPI(ProblemFormBase):
             return self.error("Display ID already exists")
 
         problem_data = {}
-        print(request.POST)
+        # print(request.POST)
         str_fields = ["_id", "title", "languages", "description"]
         for field in str_fields:
             problem_data[field] = request.POST.get(field)
         problem_data["code_num"] = int(request.POST.get("code_num"))
         problem_data["code_names"] = request.POST.getlist("code_names")
-        print(problem_data)
+        # print(problem_data)
         tags = request.POST.getlist("tags")
         problem_data["created_by"] = request.user
         problem = Problem.objects.create(**problem_data)
@@ -302,7 +302,6 @@ class MakeContestProblemPublicAPIView(APIView):
         problem.tags.set(tags)
         return self.success()
 
-#添加题目
 class AddContestProblemAPI(APIView):
     @validate_serializer(AddContestProblemSerializer)
     def post(self, request):
@@ -324,22 +323,13 @@ class AddContestProblemAPI(APIView):
         if "description" not in data:
             data["description"] = problem.description
         data["visible"] = True
+        data["is_public"] = True
         data["languages"] = problem.languages
-        # if "hint" not in data:
-        #     data["hint"] = problem.hint
-        # lab_config = data["lab_config"]
-        # data["lab_config"] = problem.lab_config
-        # if lab_config:
-        #     for k, v in lab_config.items():
-        #         if k in data["lab_config"].keys():
-        #             data["lab_config"][k] = v
-        data["vm_num"] = problem.vm_num
-        data["port_num"] = problem.vm_num
-        data["code_num"] = problem.vm_num
+        data["code_num"] = problem.code_num
+        data["code_names"] = problem.code_names
         
         tags = problem.tags.all()
         data["_id"] = data.pop("display_id")
-        data["is_public"] = True
         data["submission_number"] = data["accepted_number"] = 0
         problem = Problem.objects.create(**data)
         problem.tags.set(tags)
