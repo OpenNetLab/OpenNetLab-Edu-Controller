@@ -22,15 +22,13 @@ class Problem(models.Model):
     # lab_config = models.JSONField(default=dict)
     is_public = models.BooleanField(default=True)
     title = models.TextField()
+    timeout = models.IntegerField()
     # code segment filenames to be substituded
     description = RichTextField()
     # hint = RichTextField(null=True)
     languages = JSONField(default=["python"])
-    #需要的节点数量
     vm_num = models.IntegerField(default=1)
-    #各个节点所需要的端口数量
     port_num = models.JSONField(default=list)
-    #学生需要编写的代码段数量
     code_num = models.IntegerField()
     code_names = models.JSONField()
     template = JSONField(null=True)

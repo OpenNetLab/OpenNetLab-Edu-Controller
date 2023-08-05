@@ -41,6 +41,7 @@ class ProblemAPI(ProblemFormBase):
         for field in str_fields:
             problem_data[field] = request.POST.get(field)
         problem_data["code_num"] = int(request.POST.get("code_num"))
+        problem_data["timeout"] = int(request.POST.get("timeout"))
         problem_data["code_names"] = request.POST.getlist("code_names")
         # print(problem_data)
         tags = request.POST.getlist("tags")
@@ -154,10 +155,7 @@ class ContestProblemAPI(ProblemBase):
         if "description" not in data:
             data["description"] = problem.description
         data["visible"] = True
-        if "hint" not in data:
-            data["hint"] = problem.hint
         lab_config = data["lab_config"]
-        data["lab_config"] = problem.lab_config
         if lab_config:
             for k, v in lab_config.items():
                 if k in data["lab_config"].keys():
@@ -318,6 +316,7 @@ class AddContestProblemAPI(APIView):
         data["is_public"] = True
         data["code_num"] = old_problem.code_num
         data["code_names"] = old_problem.code_names
+        data["timeout"] = old_problem.timeout
         
         tags = old_problem.tags.all()
         data["_id"] = data.pop("display_id")

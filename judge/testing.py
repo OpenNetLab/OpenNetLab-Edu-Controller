@@ -28,7 +28,10 @@ def create_new_problem_from_template(new_problem_id: str, old_problem_id: str):
     new_path = PathManager.problem_dir(new_problem_id)
     os.makedirs(new_path, exist_ok=True)
     for filename in os.listdir(old_path):
-        shutil.copy2(join(old_path, filename), new_path)
+        filepath = join(old_path, filename)
+        if isdir(filepath):
+            continue
+        shutil.copy2(filepath, new_path)
     print(f'create problem instance {new_path}')
 
 def make_file_executable(file_path):
@@ -49,12 +52,12 @@ def make_file_executable(file_path):
 def run_command_with_timeout(command: list, timeout: float) -> int:
     try:
         # Use the 'sudo' command to execute the given command with elevated privileges.
-        result = subprocess.run(['sudo'] + command, capture_output=True, text=True, check=True, timeout=timeout)
+        result = subprocess.run(["/usr/bin/python3"] + command, capture_output=False, text=True, check=True, timeout=timeout)
         print("Command output:")
         print(result.stdout)
         return TestResult.Succeed
     except subprocess.TimeoutExpired:
-        print('program timeout')
+        print(f'program timeout after {timeout} seconds')
         return TestResult.Timeout
     except subprocess.CalledProcessError as e:
         print("Command execution failed.")
@@ -108,6 +111,9 @@ class ZipFileUploader:
             return False
         if "testcases.json" not in filenames:
             self._error_message = "testcases.json not in zipfile uploaded"
+            return False
+        if "logs" in filenames and isdir(join(dir_path, "logs")):
+            self._error_message = "lab zip cannot include logs directory"
             return False
         return True
 
@@ -163,7 +169,10 @@ class SubmissionTester:
         if not exists(prob_dir):
             raise Exception("problem dir {} not exists".format(prob_dir))
         for filename in os.listdir(prob_dir):
-            shutil.copy2(join(prob_dir, filename), self.sub_dirpath)
+            filepath = join(prob_dir, filename)
+            if isdir(filepath):
+                continue
+            shutil.copy2(filepath, self.sub_dirpath)
         for index, codename in enumerate(problem.code_names):
             filecontent = submission.code_list[index]
             codepath = join(self.sub_dirpath, codename)
@@ -176,7 +185,7 @@ class SubmissionTester:
         if not exists(tester_path):
             raise Exception("running submission: tester {} not exists".format(tester_path))
         print(f"running {tester_path}")
-        res = run_command_with_timeout([tester_path, "--log", "--json"], 1)
+        res = run_command_with_timeout([tester_path, "--log", "--json"], self.sub.problem.timeout)
         if res == TestResult.Timeout:
             self.sub.result = JudgeStatus.PROGRAM_TIMEOUT
             self.sub.save()
