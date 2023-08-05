@@ -6,4 +6,4 @@ __pycache__
 docker_deploy
 migrations
 onl.db
-data/log
+data

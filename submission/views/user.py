@@ -147,14 +147,11 @@ class SubmissionAPI(APIView):
         if not submission.check_user_permission(request.user):
             return self.error("No permission for this submission")
 
-        if submission.result in [JudgeStatus.PENDING, JudgeStatus.JUDGING]:
-            # update_submission_status(submission)
-            pass
-
         submission_data = SubmissionSafeModelSerializer(submission).data
         submission_data["can_unshare"] = submission.check_user_permission(
             request.user, check_share=False
         )
+        submission_data["code_names"] = submission.problem.code_names
         return self.success(submission_data)
 
     @validate_serializer(ShareSubmissionSerializer)
@@ -196,11 +193,6 @@ class SubmissionListAPI(APIView):
         submissions = Submission.objects.filter(contest_id__isnull=True).filter(
             user_id=request.user.id
         )
-
-        for submission in submissions:
-            if submission.result in [JudgeStatus.PENDING, JudgeStatus.JUDGING]:
-                # update_submission_status(submission)
-                pass
 
         problem_id = request.GET.get("problem_id")
         result = request.GET.get("result")
@@ -248,10 +240,6 @@ class ContestSubmissionListAPI(APIView):
         submissions = Submission.objects.filter(contest_id=contest_id).filter(
             user_id=request.user.id
         )
-        for submission in submissions:
-            if submission.result in [JudgeStatus.PENDING, JudgeStatus.JUDGING]:
-                # update_submission_status(submission)
-                pass
 
         problem_id = request.GET.get("problem_id")
         result = request.GET.get("result")

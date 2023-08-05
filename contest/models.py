@@ -17,12 +17,11 @@ class Contest(models.Model):
     # show real time rank or cached rank
     password = models.TextField(null=True)
     # enum of ContestRuleType
-    start_time = models.DateTimeField(timezone.now())
+    start_time = models.DateTimeField(default=timezone.now())
     end_time = models.DateTimeField(null=True)
     create_time = models.DateTimeField(auto_now_add=True)
     last_update_time = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    # 是否可见 false的话相当于删除
     visible = models.BooleanField(default=True)
     contest_admin = models.JSONField(default=list)
     allowed_ip_ranges = JSONField(default=list)

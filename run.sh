@@ -16,6 +16,9 @@ elif [[ $cmd == "clean" ]]; then
   find . -type d -name 'migrations' -not -path './venv/*' | xargs rm -r;
   rm onl.db
 elif [[ $cmd == "rebuild" ]]; then
+  rm -rf ./data/zips
+  rm -rf ./data/problems
+  rm -rf ./data/submissions
   find . -type d -name 'migrations' -not -path './venv/*' | xargs rm -r;
   rm onl.db
   for app in "${apps[@]}"; do

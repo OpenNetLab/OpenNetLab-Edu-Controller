@@ -9,12 +9,13 @@ from utils.shortcuts import rand_str
 
 
 class JudgeStatus:
-    PENDING      = 0
-    JUDGING      = 1
+    PENDING = 0
+    JUDGING = 1
     SYSTEM_ERROR = 2
-    ALL_PASSED   = 3
-    SOME_PASSED  = 4
-    ALL_FAILED   = 5
+    ALL_PASSED = 3
+    SOME_PASSED = 4
+    ALL_FAILED = 5
+    PROGRAM_TIMEOUT = 6
 
 
 class Submission(models.Model):
@@ -35,7 +36,12 @@ class Submission(models.Model):
     ip = models.TextField(null=True)
 
     def check_user_permission(self, user, check_share=True):
-        if self.user_id == user.id or user.is_super_admin() or user.can_mgmt_all_problem() or self.problem.created_by_id == user.id:
+        if (
+            self.user_id == user.id
+            or user.is_super_admin()
+            or user.can_mgmt_all_problem()
+            or self.problem.created_by_id == user.id
+        ):
             return True
 
         if check_share:
@@ -46,7 +52,9 @@ class Submission(models.Model):
         return False
 
     def modify_permission(self, user, check_share=True):
-        if user.is_super_admin() or (user.is_admin_role() and user.id in self.problem.contest.contest_admin):
+        if user.is_super_admin() or (
+            user.is_admin_role() and user.id in self.problem.contest.contest_admin
+        ):
             return True
         return False
 

@@ -18,6 +18,11 @@ ZIPFILE_DIR = "zips"
 TESTCASE_NAME = "testcases.json"
 TESTER_NAME = "tester"
 
+class TestResult:
+    Succeed = 0
+    Error   = 1
+    Timeout = 2
+
 def create_new_problem_from_template(new_problem_id: str, old_problem_id: str):
     old_path = PathManager.problem_dir(old_problem_id)
     new_path = PathManager.problem_dir(new_problem_id)
@@ -41,14 +46,20 @@ def make_file_executable(file_path):
         return False
 
 
-def run_command_with_sudo(command):
+def run_command_with_timeout(command: list, timeout: float) -> int:
     try:
         # Use the 'sudo' command to execute the given command with elevated privileges.
-        result = subprocess.run(['sudo'] + command, capture_output=True, text=True, check=True)
-        return result
+        result = subprocess.run(['sudo'] + command, capture_output=True, text=True, check=True, timeout=timeout)
+        print("Command output:")
+        print(result.stdout)
+        return TestResult.Succeed
+    except subprocess.TimeoutExpired:
+        print('program timeout')
+        return TestResult.Timeout
     except subprocess.CalledProcessError as e:
+        print("Command execution failed.")
         print(f"Error: {e}")
-        return None
+        return TestResult.Error
 
 
 class PathManager:
@@ -165,12 +176,13 @@ class SubmissionTester:
         if not exists(tester_path):
             raise Exception("running submission: tester {} not exists".format(tester_path))
         print(f"running {tester_path}")
-        result = run_command_with_sudo([tester_path, "--log", "--json"])
-        if result:
-            print("Command output:")
-            print(result.stdout)
-        else:
-            print("Command execution failed.")
+        res = run_command_with_timeout([tester_path, "--log", "--json"], 1)
+        if res == TestResult.Timeout:
+            self.sub.result = JudgeStatus.PROGRAM_TIMEOUT
+            self.sub.save()
+            return
+        elif res == TestResult.Error:
+            raise Exception("Running test proc has some problem")
 
         log_path = join(self.sub_dirpath, 'logs')
         if not exists(log_path):
