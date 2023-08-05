@@ -207,7 +207,8 @@ class _SysOptionsMeta(type):
 
     @my_property(ttl=DEFAULT_SHORT_TTL)
     def website_footer(cls):
-        return cls._get_option(OptionKeys.website_footer)
+        return ""
+        # return cls._get_option(OptionKeys.website_footer)
 
     @website_footer.setter
     def website_footer(cls, value):

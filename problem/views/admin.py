@@ -51,7 +51,7 @@ class ProblemAPI(ProblemFormBase):
         uploader = ZipFileUploader(request.FILES.get('file'), problem)
         valid = uploader.upload()
         if not valid:
-            return uploader.error_message
+            return self.error(uploader.error_message)
 
         # create inexist tags
         for item in tags:

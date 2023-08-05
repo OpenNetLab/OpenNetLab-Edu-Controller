@@ -14,9 +14,8 @@ from utils.models import RichTextField
 class Contest(models.Model):
     title = models.TextField()
     description = RichTextField()
-    # show real time rank or cached rank
     password = models.TextField(null=True)
-    # enum of ContestRuleType
+    contest_type = models.TextField()
     start_time = models.DateTimeField(default=timezone.now())
     end_time = models.DateTimeField(null=True)
     create_time = models.DateTimeField(auto_now_add=True)
@@ -37,12 +36,6 @@ class Contest(models.Model):
         else:
             # 正在进行 返回0
             return ContestStatus.CONTEST_UNDERWAY
-
-    @property
-    def contest_type(self):
-        if self.password:
-            return ContestType.PASSWORD_PROTECTED_CONTEST
-        return ContestType.PUBLIC_CONTEST
 
     def problem_details_permission(self, user):
         return True

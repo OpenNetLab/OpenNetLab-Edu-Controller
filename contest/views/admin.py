@@ -13,7 +13,7 @@ from account.models import User
 from submission.models import Submission, JudgeStatus
 from utils.api import APIView, validate_serializer
 from utils.cache import cache
-from utils.constants import CacheKey
+from utils.constants import CacheKey, ContestType
 from utils.shortcuts import rand_str
 from utils.tasks import delete_files
 from ..models import Contest, ContestAnnouncement
@@ -37,8 +37,11 @@ class ContestAPI(APIView):
         # data["contest_admin"].append(str(request.user.id))
         if data["end_time"] <= data["start_time"]:
             return self.error("Start time must occur earlier than end time")
-        if data.get("password") and data["password"] == "":
+        if data["password"] == "":
             data["password"] = None
+            data["contest_type"] = ContestType.PUBLIC_CONTEST
+        else:
+            data["contest_type"] = ContestType.PASSWORD_PROTECTED_CONTEST
         for ip_range in data["allowed_ip_ranges"]:
             try:
                 ip_network(ip_range, strict=False)
