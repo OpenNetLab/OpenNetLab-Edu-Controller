@@ -192,7 +192,7 @@ class SubmissionTester:
                     cur_data = testcase_json_data["testcases"][idx-1] 
                     if "config" in cur_data:
                         # specific config for testcase
-                        config = ["config"]
+                        config = cur_data["config"]
                     else:
                         # no config
                         config = None
