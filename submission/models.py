@@ -25,15 +25,16 @@ class Submission(models.Model):
     create_time = models.DateTimeField(auto_now_add=True)
     user_id = models.CharField(db_index=True, max_length=50)
     username = models.TextField()
+    language = models.TextField()
     code_list = models.JSONField(default=list)
     server_list = models.JSONField(default=list)
     ports_list = models.JSONField(default=dict)
     result = models.IntegerField(db_index=True, default=JudgeStatus.PENDING)
     grade = models.IntegerField(default=0)
     failed_info = JSONField(default=list)
-    language = models.TextField()
     shared = models.BooleanField(default=False)
     ip = models.TextField(null=True)
+    execution_time = models.FloatField(default=0.0)
 
     def check_user_permission(self, user, check_share=True):
         if (
