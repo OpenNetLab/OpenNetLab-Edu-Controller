@@ -73,7 +73,6 @@ class SubmissionAPI(APIView):
     def post(self, request):
         # print(request.data)
         data = request.data
-        hide_id = False
 
         error = self.throttling(request)
         if error:
@@ -133,10 +132,26 @@ class SubmissionAPI(APIView):
             self.error(str(e))
         problem.save()
 
-        if hide_id:
-            return self.success()
+        score = submission.grade
+        user = User.objects.get(id=request.user.id)
+        assert user
+        profile = UserProfile.objects.get(user=user)
+        assert profile
+        if problem._id not in profile.problems_status:
+            profile.problems_status[problem._id] = score
+            profile.total_score += score
+            if score == 100:
+                profile.accepted_number += 1
         else:
-            return self.success(SubmissionModelSerializer(submission).data)
+            prev_score = profile.problems_status[problem._id]
+            if score > prev_score:
+                profile.problems_status[problem._id] = score
+                profile.total_score += (score - prev_score)
+                if score == 100:
+                    profile.accepted_number += 1
+        profile.save()
+
+        return self.success(SubmissionModelSerializer(submission).data)
 
     @login_required
     def get(self, request):

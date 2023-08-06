@@ -70,25 +70,7 @@ class User(AbstractBaseUser):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    # Task_problems_status examples:
-    # {
-    #     "problems": {
-    #         "1": {
-    #             "status": JudgeStatus.ACCEPTED,
-    #             "Score:" 80,
-    #             "passed test case": [1, 2],
-    #             "_id": "1000"
-    #         }
-    #     },
-    #     "contest_problems": {
-    #         "1": {
-    #             "status": JudgeStatus.Error,
-    #             "Score:" 80,
-    #             "passed test case": [1, 2],
-    #             "_id": "1000"
-    #         }
-    #     }
-    # }
+    # dict of problem.id:max_grade
     problems_status = JSONField(default=dict)
     real_name = models.TextField(null=True)
     blog = models.URLField(null=True)
@@ -96,7 +78,7 @@ class UserProfile(models.Model):
     school = models.TextField(null=True)
     major = models.TextField(null=True)
     language = models.TextField(null=True)
-    #for Contest
+    # for Contest
     accepted_number = models.IntegerField(default=0)
     total_score = models.IntegerField(default=0)
 
