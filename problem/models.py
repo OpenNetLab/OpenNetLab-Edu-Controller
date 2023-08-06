@@ -26,7 +26,7 @@ class Problem(models.Model):
     # code segment filenames to be substituded
     description = RichTextField()
     # hint = RichTextField(null=True)
-    languages = JSONField(default=["python"])
+    languages = JSONField(default=["Python3"])
     vm_num = models.IntegerField(default=1)
     port_num = models.JSONField(default=list)
     code_num = models.IntegerField()

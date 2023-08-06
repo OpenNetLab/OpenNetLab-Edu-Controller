@@ -180,7 +180,8 @@ class SubmissionTester:
                 print(f"substitude {codepath} with user implemented")
                 wfp.write(filecontent)
 
-    def judge(self):
+    def judge(self) -> bool:
+        # return True if grade is 100
         tester_path = join(self.sub_dirpath, TESTER_NAME)
         if not exists(tester_path):
             raise Exception("running submission: tester {} not exists".format(tester_path))
@@ -189,7 +190,7 @@ class SubmissionTester:
         if res == TestResult.Timeout:
             self.sub.result = JudgeStatus.PROGRAM_TIMEOUT
             self.sub.save()
-            return
+            return False
         elif res == TestResult.Error:
             raise Exception("Running test proc has some problem")
 
@@ -238,3 +239,6 @@ class SubmissionTester:
         else:
             self.sub.result = JudgeStatus.SOME_PASSED
         self.sub.save()
+        if grade == 100:
+            return True
+        return False

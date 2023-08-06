@@ -68,7 +68,7 @@ class SubmissionAPI(APIView):
                 ):
                     return self.error("Your IP is not allowed in this contest")
 
-    @validate_serializer(CreateSubmissionSerializer)
+    # @validate_serializer(CreateSubmissionSerializer)
     @login_required
     def post(self, request):
         # print(request.data)
@@ -124,8 +124,14 @@ class SubmissionAPI(APIView):
 
         # execute judge task in dramatiq
         # local_judge_task.send(submission.id, problem._id)
-        tester = SubmissionTester(submission)
-        tester.judge()
+
+        problem.submission_number += 1
+        try:
+            if SubmissionTester(submission).judge():
+                problem.accepted_number += 1
+        except Exception as e:
+            self.error(str(e))
+        problem.save()
 
         if hide_id:
             return self.success()
