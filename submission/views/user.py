@@ -258,12 +258,13 @@ class ContestSubmissionListAPI(APIView):
         if problem_name != "":
             problems = Problem.objects.filter(Q(_id__icontains=problem_name))
             submissions = submissions.filter(Q(problem__in=problems))
-
+        
         data = self.paginate_data(request, submissions)
         data["results"] = SubmissionListSerializer(
             data["results"], many=True, user=request.user
         ).data
 
+        # print(data)
         return self.success(data)
 
 
