@@ -2,6 +2,7 @@ import json
 import zipfile
 import os
 import shutil
+import shlex
 import subprocess
 from os.path import isdir, join, exists, dirname
 from django.core.files.storage import FileSystemStorage
@@ -52,9 +53,8 @@ def make_file_executable(file_path):
 def run_command_with_timeout(command: list, timeout: float) -> int:
     try:
         # Use the 'sudo' command to execute the given command with elevated privileges.
-        result = subprocess.run(["/usr/bin/python3"] + command, capture_output=False, text=True, check=True, timeout=timeout)
-        print("Command output:")
-        print(result.stdout)
+        result = subprocess.run(["/usr/bin/python3"] + command, capture_output=True, text=True, check=True, timeout=timeout)
+        # print("Command output:\n", result.stdout)
         return TestResult.Succeed
     except subprocess.TimeoutExpired:
         print(f'program timeout after {timeout} seconds')
@@ -180,6 +180,45 @@ class SubmissionTester:
                 print(f"substitude {codepath} with user implemented")
                 wfp.write(filecontent)
 
+    def remove_all_logs(self):
+        log_path = join(self.sub_dirpath, 'logs')
+        for filename in os.listdir(log_path):
+            if filename.startswith("testcase"):
+                file_path = join(log_path, filename)
+                os.remove(file_path)
+
+    def remove_redudant_logs(self, failed_indexes: list):
+        log_path = join(self.sub_dirpath, 'logs')
+        ignore_files = [f"testcase{idx}.log" for idx in failed_indexes]
+        ignore_files.append("results.json")
+        for filename in os.listdir(log_path):
+            if filename in ignore_files:
+                continue
+            file_path = join(log_path, filename)
+            os.remove(file_path)
+
+    def trim_logs(self, failed_indexes: list):
+        log_path = join(self.sub_dirpath, 'logs')
+        max_lines = 1000
+        for idx in failed_indexes:
+            file_path = join(log_path, f"testcase{idx}.log")
+            temp_file_path = file_path + ".trimmed"
+            escaped_file_path = shlex.quote(file_path)
+            tail_command = f"tail -n {max_lines} {escaped_file_path} > {shlex.quote(temp_file_path)}"
+            os.system(tail_command)
+
+            with open(temp_file_path, 'r') as temp_file:
+                content = temp_file.read()
+
+            if os.path.getsize(file_path) > os.path.getsize(temp_file_path):
+                with open(temp_file_path, 'w') as temp_file:
+                    temp_file.write("log file is too long, only show the last 1000 lines:\n")
+                    temp_file.write(content)
+
+            os.remove(file_path)
+            os.rename(temp_file_path, file_path)
+
+
     def judge(self) -> bool:
         # return True if grade is 100
         tester_path = join(self.sub_dirpath, TESTER_NAME)
@@ -187,6 +226,9 @@ class SubmissionTester:
             raise Exception("running submission: tester {} not exists".format(tester_path))
         print(f"running {tester_path}")
         res = run_command_with_timeout([tester_path, "--log", "--json"], self.sub.problem.timeout)
+
+        if res != TestResult.Succeed:
+            self.remove_all_logs()
         if res == TestResult.Timeout:
             self.sub.result = JudgeStatus.PROGRAM_TIMEOUT
             self.sub.save()
@@ -198,39 +240,51 @@ class SubmissionTester:
         if not exists(log_path):
             raise Exception(f"logs path {log_path} not exists")
         failed_info = []
+        failed_indexes: list
+
         with open(join(log_path, "results.json")) as fp:
             res = json.load(fp)
             grade = res['grade']
             self.sub.grade = res['grade']
-            for idx in res['failed']:
-                log_fp = open(join(log_path, f"testcase{idx}.log"), "r")
-                testcase_fp = open(join(self.sub_dirpath, TESTCASE_NAME), "r")
-                testcase_json_data = json.load(testcase_fp)
-                # notice the index here, logical index starts from 1
-                if "config" in testcase_json_data:
-                    # global config
-                    config = testcase_json_data["config"]
-                else:
-                    cur_data = testcase_json_data["testcases"][idx-1] 
-                    if "config" in cur_data:
-                        # specific config for testcase
-                        config = cur_data["config"]
+
+            if grade == 0 or grade == 100:
+                self.remove_all_logs()
+            else:
+                # clean and trim
+                failed_indexes = res['failed']
+                self.remove_redudant_logs(failed_indexes)
+                self.trim_logs(failed_indexes)
+
+                for idx in res['failed']:
+                    log_fp = open(join(log_path, f"testcase{idx}.log"), "r")
+                    testcase_fp = open(join(self.sub_dirpath, TESTCASE_NAME), "r")
+                    testcase_json_data = json.load(testcase_fp)
+                    # notice the index here, logical index starts from 1
+                    if "config" in testcase_json_data:
+                        # global config
+                        config = testcase_json_data["config"]
                     else:
-                        # no config
-                        config = None
-                displayed_test = {
-                    "input": testcase_json_data["testcases"][idx-1]["input"],
-                    "expected_output":testcase_json_data["testcases"][idx-1]["output"],
-                }
-                # config, "testcase"
-                failed_info.append({
-                    "config": config,
-                    "testcase_index": idx,
-                    "testcase": displayed_test,
-                    "log": log_fp.read()
-                })
-                log_fp.close()
-                testcase_fp.close()
+                        cur_data = testcase_json_data["testcases"][idx-1] 
+                        if "config" in cur_data:
+                            # specific config for testcase
+                            config = cur_data["config"]
+                        else:
+                            # no config
+                            config = None
+                    displayed_test = {
+                        "input": testcase_json_data["testcases"][idx-1]["input"],
+                        "expected_output":testcase_json_data["testcases"][idx-1]["output"],
+                    }
+                    # config, "testcase"
+                    failed_info.append({
+                        "config": config,
+                        "testcase_index": idx,
+                        "testcase": displayed_test,
+                        "log": log_fp.read()
+                    })
+                    log_fp.close()
+                    testcase_fp.close()
+
         self.sub.failed_info = failed_info
         if grade == 0:
             self.sub.result = JudgeStatus.ALL_FAILED
@@ -239,6 +293,7 @@ class SubmissionTester:
         else:
             self.sub.result = JudgeStatus.SOME_PASSED
         self.sub.save()
+
         if grade == 100:
             return True
         return False
