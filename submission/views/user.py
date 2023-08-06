@@ -3,6 +3,7 @@ import hashlib
 import requests
 import logging
 from django.db import transaction
+from django.db.models import Q
 
 from account.decorators import login_required, check_contest_permission
 from account.models import User, UserProfile
@@ -236,30 +237,33 @@ class ContestSubmissionListAPI(APIView):
         if not request.GET.get("contest_id"):
             return self.error("Contest_id is needed")
 
+        # first filter by contest
         contest_id = request.GET.get("contest_id")
-        submissions = Submission.objects.filter(contest_id=contest_id).filter(
-            user_id=request.user.id
-        )
+        submissions = Submission.objects.filter(contest_id=contest_id)
 
-        problem_id = request.GET.get("problem_id")
-        result = request.GET.get("result")
-        if problem_id:
-            try:
-                problem = Problem.objects.get(
-                    _id=problem_id, contest_id=contest_id, visible=True
-                )
-            except Problem.DoesNotExist:
-                return self.error("Problem doesn't exist")
-            submissions = submissions.filter(problem=problem)
+        # filter by the request user id
+        users = User.objects.filter(id=request.user.id)
+        if len(users) == 0:
+            self.error(f"no such user id: {request.user.id}")
+        user = users[0]
 
-        if result:
-            submissions = submissions.filter(result=result)
+        if not (user.is_admin_role() and int(request.GET.get('myself')) == 0):
+            submissions = submissions.filter(user_id=request.user.id)
 
-        # filter the test submissions submitted before contest start
+        if request.GET.get('username') != '':
+            submissions = submissions.filter(username=request.GET.get('username'))
+
+        # filter by problem names
+        problem_name = request.GET.get("problem_name")
+        if problem_name != "":
+            problems = Problem.objects.filter(Q(_id__icontains=problem_name))
+            submissions = submissions.filter(Q(problem__in=problems))
+
         data = self.paginate_data(request, submissions)
         data["results"] = SubmissionListSerializer(
             data["results"], many=True, user=request.user
         ).data
+
         return self.success(data)
 
 
