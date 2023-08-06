@@ -137,6 +137,7 @@ class SubmissionAPI(APIView):
         assert user
         profile = UserProfile.objects.get(user=user)
         assert profile
+        profile.total_submissions += 1
         if problem._id not in profile.problems_status:
             profile.problems_status[problem._id] = score
             profile.total_score += score

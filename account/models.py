@@ -79,6 +79,7 @@ class UserProfile(models.Model):
     major = models.TextField(null=True)
     language = models.TextField(null=True)
     # for Contest
+    total_submissions = models.IntegerField(default=0)
     accepted_number = models.IntegerField(default=0)
     total_score = models.IntegerField(default=0)
 
