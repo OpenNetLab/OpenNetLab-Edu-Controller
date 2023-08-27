@@ -32,7 +32,6 @@ class JSONParser(object):
     def parse(body):
         return json.loads(body.decode("utf-8"))
 
-
 class URLEncodedParser(object):
     content_type = ContentType.url_encoded_request
 
@@ -141,11 +140,12 @@ class APIView(View):
         return data
 
     def dispatch(self, request, *args, **kwargs):
-        if self.request_parsers:
-            try:
-                request.data = self._get_request_data(self.request)
-            except ValueError as e:
-                return self.error(err="invalid-request", msg=str(e))
+        if not (request.content_type and request.content_type.startswith(ContentType.form_data_request)):
+            if self.request_parsers:
+                try:
+                    request.data = self._get_request_data(self.request)
+                except ValueError as e:
+                    return self.error(err="invalid-request", msg=str(e))
         try:
             return super(APIView, self).dispatch(request, *args, **kwargs)
         except APIError as e:

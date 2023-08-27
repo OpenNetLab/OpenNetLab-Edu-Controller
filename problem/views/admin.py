@@ -1,3 +1,5 @@
+import os
+import shutil
 import json
 import zipfile
 
@@ -10,7 +12,7 @@ from submission.models import Submission, JudgeStatus
 from utils.api import APIView, validate_serializer
 from utils.shortcuts import rand_str
 from utils.tasks import delete_files
-from judge.testing import ZipFileUploader, create_new_problem_from_template
+from judge.testing import ZipFileUploader, create_new_problem_from_template, PathManager
 
 from ..models import Problem, ProblemTag
 from ..serializers import *
@@ -18,13 +20,8 @@ from ..serializers import *
 class ProblemBase(APIView):
     def common_checks(self, request):
         data = request.data
-        
 
-class ProblemFormBase(APIView):
-    # use View's dispatch function
-    request_parsers = None
-
-class ProblemAPI(ProblemFormBase):
+class ProblemAPI(ProblemBase):
     # @validate_serializer(CreateProblemSerializer)
     @problem_permission_required
     def post(self, request):
@@ -128,9 +125,10 @@ class ProblemAPI(ProblemFormBase):
         except Problem.DoesNotExist:
             return self.error("Problem does not exists")
         ensure_created_by(problem, request.user)
-        # d = os.path.join(settings.TEST_CASE_DIR, problem.test_case_id)
-        # if os.path.isdir(d):
-        #     shutil.rmtree(d, ignore_errors=True)
+        d = PathManager.problem_dir(problem._id)
+        if os.path.isdir(d):
+            print('remove dir', d)
+            shutil.rmtree(d, ignore_errors=True)
         problem.delete()
         return self.success()
 
