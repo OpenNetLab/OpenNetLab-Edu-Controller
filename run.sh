@@ -5,7 +5,7 @@
 cmd=$1
 apps=("account" "announcement" "conf" "contest" "options" "problem" "submission")
 
-clean() {
+function clean {
   rm -rf ./data/zips
   rm -rf ./data/problems
   rm -rf ./data/submissions
@@ -14,25 +14,30 @@ clean() {
   docker rm -f oj-redis-dev
 }
 
+function migrate {
+  for app in "${apps[@]}"; do
+    python3 manage.py makemigrations $app
+  done
+  python3 manage.py migrate
+  python3 manage.py inituser --username=root --password=rootroot --action=create_super_admin
+}
+
 if [[ $cmd == "make" || $cmd == "makemigrations" ]]; then
   for app in "${apps[@]}"; do
     python3 manage.py makemigrations $app
   done
 elif [[ $cmd == "migrate" ]]; then
-  python3 manage.py migrate
-  python manage.py inituser --username=root --password=rootroot --action=create_super_admin
+  migrate
 elif [[ $cmd == "clean" ]]; then
   clean
 elif [[ $cmd == "rebuild" ]]; then
   clean
-  for app in "${apps[@]}"; do
-    python3 manage.py makemigrations $app
-  done
-  python3 manage.py migrate
-  python manage.py inituser --username=root --password=rootroot --action=create_super_admin
+  migrate
 elif [[ $cmd == "run" ]]; then
   # run dramatiq
   pgrep dramatiq > /dev/null
+  
+  # docker run -it -d -e POSTGRES_DB=onlinejudge -e POSTGRES_USER=onlinejudge -e POSTGRES_PASSWORD=onlinejudge -p 5435:5432 --name oj-postgres-dev postgres:10-alpine
   
   if [[ $? -ne 0 ]]; then
     echo "running dramatiq ..."
