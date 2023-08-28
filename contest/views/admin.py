@@ -104,6 +104,17 @@ class ContestAPI(APIView):
             contests = contests.filter(title__contains=keyword)
         return self.success(self.paginate_data(request, contests, ContestAdminSerializer))
 
+    def delete(self, request):
+        contest_id = request.GET.get("id")
+        if contest_id:
+            try:
+                contest = Contest.objects.get(id=contest_id)
+                ensure_managed_by(contest, request.user)
+                contest.delete()
+            except Contest.DoesNotExist:
+                return self.error("Contest does not exist")
+        return self.success()
+
 class ContestAnnouncementAPI(APIView):
     @validate_serializer(CreateContestAnnouncementSerializer)
     def post(self, request):
