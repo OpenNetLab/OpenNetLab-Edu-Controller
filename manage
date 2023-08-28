@@ -49,7 +49,8 @@ function run {
     echo "redis is already running"
   fi
 
-  python3 manage.py runserver 0.0.0.0:7890
+  echo "running onl ..."
+  python3 manage.py runserver 0.0.0.0:7890 &>data/log/onl.log &
 }
 
 if [[ $cmd == "make" || $cmd == "makemigrations" ]]; then
