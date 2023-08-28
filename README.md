@@ -29,3 +29,5 @@ for more details check [onl-fe](https://github.com/OpenNetLab/OpenNetLab-Edu-FE)
 ```
 sudo nginx -c <absolute-dir-path>/nginx.conf
 ```
+
+- make sure [onl-library](https://github.com/OpenNetLab/OpenNetLab-Edu) is installed
