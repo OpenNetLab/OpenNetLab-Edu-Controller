@@ -125,7 +125,7 @@ class ProblemAPI(ProblemBase):
         except Problem.DoesNotExist:
             return self.error("Problem does not exists")
         ensure_created_by(problem, request.user)
-        d = PathManager.problem_dir(problem._id)
+        d = PathManager.problem_dir(problem.id)
         if os.path.isdir(d):
             print('remove dir', d)
             shutil.rmtree(d, ignore_errors=True)
@@ -322,7 +322,7 @@ class AddContestProblemAPI(APIView):
         new_problem = Problem.objects.create(**data)
         new_problem.tags.set(tags)
 
-        create_new_problem_from_template(new_problem._id, old_problem._id)
+        create_new_problem_from_template(new_problem.id, old_problem.id)
 
         return self.success()
 

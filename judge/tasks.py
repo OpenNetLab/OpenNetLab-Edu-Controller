@@ -21,7 +21,7 @@ def judge_task(submission_id, problem_id):
 def local_judge_task(submission_id, problem_id, user_id):
     submission = Submission.objects.get(id=submission_id)
 
-    problem = Problem.objects.get(_id=problem_id)
+    problem = Problem.objects.get(id=problem_id)
     problem.submission_number += 1
     try:
         if SubmissionTester(submission).judge():

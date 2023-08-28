@@ -24,7 +24,7 @@ class TestResult:
     Error   = 1
     Timeout = 2
 
-def create_new_problem_from_template(new_problem_id: str, old_problem_id: str):
+def create_new_problem_from_template(new_problem_id: int, old_problem_id: int):
     old_path = PathManager.problem_dir(old_problem_id)
     new_path = PathManager.problem_dir(new_problem_id)
     os.makedirs(new_path, exist_ok=True)
@@ -67,8 +67,8 @@ def run_command_with_timeout(command: list, timeout: float) -> int:
 
 class PathManager:
     @staticmethod
-    def problem_dir(problem_id: str) -> str:
-        return join(DATA_DIR, PROBLEM_DIR, problem_id)
+    def problem_dir(id: int) -> str:
+        return join(DATA_DIR, PROBLEM_DIR, str(id))
 
     @staticmethod
     def submission_dir(user_id: str, submission_id: str) -> str:
@@ -91,7 +91,7 @@ class ZipFileUploader:
         else:
             raise Exception("zipfile is None")
         self.problem = problem
-        self.problem_dir_path = PathManager.problem_dir(problem._id)
+        self.problem_dir_path = PathManager.problem_dir(problem.id)
         if not exists(self.problem_dir_path):
             os.makedirs(self.problem_dir_path)
         self._error_message: str = ""
@@ -165,7 +165,7 @@ class SubmissionTester:
         if not exists(self.sub_dirpath):
             os.makedirs(self.sub_dirpath, exist_ok=True)
         problem: Problem = submission.problem
-        prob_dir = PathManager.problem_dir(problem._id) # use display id
+        prob_dir = PathManager.problem_dir(problem.id) # use display id
         if not exists(prob_dir):
             raise Exception("problem dir {} not exists".format(prob_dir))
         for filename in os.listdir(prob_dir):
