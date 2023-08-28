@@ -20,6 +20,12 @@ pip3 install -r requirements.txt
 ./run.sh run
 ```
 
-- __then run onl-frontent
+- __then run onl-frontent__
 
 for more details check [OpenNetLab-FE](onl-fe)
+
+- run nginx using local configuration
+
+```
+sudo nginx -c <absolute-dir-path>/nginx.conf
+```
