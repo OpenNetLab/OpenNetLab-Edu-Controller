@@ -22,7 +22,7 @@ pip3 install -r requirements.txt
 
 - __then run onl-frontent__
 
-for more details check [https://github.com/OpenNetLab/OpenNetLab-Edu-Controller](onl-fe)
+for more details check [onl-fe](https://github.com/OpenNetLab/OpenNetLab-Edu-FE)
 
 - run nginx using local configuration
 
