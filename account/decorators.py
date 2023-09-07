@@ -4,7 +4,7 @@ import time
 
 from .models import User
 from problem.models import Problem
-from contest.models import Contest, ContestType, ContestStatus, ContestRuleType
+from contest.models import Contest, ContestType, ContestStatus
 from utils.api import JSONResponse, APIError
 from utils.constants import CONTEST_PASSWORD_SESSION_KEY
 from .models import ProblemPermission
@@ -150,7 +150,6 @@ def ensure_created_by(obj, user):
         raise e
 
 
-# 确定对Lab Contest有管理权限
 def ensure_managed_by(contest: Contest, user: User):
     e = APIError("Illegal Manager")
     if not user.is_admin_role():

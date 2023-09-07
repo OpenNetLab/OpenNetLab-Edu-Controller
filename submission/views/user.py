@@ -9,7 +9,6 @@ from account.decorators import login_required, check_contest_permission
 from account.models import User, UserProfile
 from conf.models import JudgeServer
 from contest.models import Contest, ContestStatus
-from judge.testing import SubmissionTester
 from options.options import SysOptions
 from problem.models import Problem
 from judge.tasks import local_judge_task
@@ -21,7 +20,6 @@ from utils.throttling import TokenBucket
 
 from ..models import Submission
 from ..serializers import (
-    CreateSubmissionSerializer,
     SubmissionModelSerializer,
     ShareSubmissionSerializer,
 )
@@ -124,7 +122,7 @@ class SubmissionAPI(APIView):
         submission.save()
 
         # execute judge task in dramatiq
-        local_judge_task.send(submission.id, problem._id, str(request.user.id))
+        local_judge_task.send(submission.id, problem.id, str(request.user.id))
 
         return self.success(SubmissionModelSerializer(submission).data)
 
