@@ -30,6 +30,7 @@ function migrate {
 
 function run_onl {
   [[ ! -d data/log ]] && mkdir -p data/log && echo 'mkdir data/log'
+  [[ -z $FRONTEND ]] && echo "environment variable FRONTEND is not set" && return 1
 
   if ! command which python3 | grep venv > /dev/null; then
     source venv/bin/activate
@@ -59,11 +60,13 @@ function run_onl {
   # run onl
   if ! command pgrep -f "$supervisor_cmd" > /dev/null; then
     echo "running onl controller ..."
-    WORKDIR=$workdir MAX_WORKER_NUM=$process_num $supervisor_cmd > /dev/null &
+    echo $FRONTEND
+    FRONTEND=$FRONTEND WORKDIR=$workdir MAX_WORKER_NUM=$process_num $supervisor_cmd > /dev/null &
     [[ $? -ne 0 ]] && echo "Error: fail to run onl"
   else
     echo "onl is already running"
   fi
+  return 0
 }
 
 function stop_onl {
