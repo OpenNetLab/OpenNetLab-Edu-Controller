@@ -182,6 +182,8 @@ class SubmissionTester:
 
     def remove_all_logs(self):
         log_path = join(self.sub_dirpath, 'logs')
+        if not exists(log_path):
+            return
         for filename in os.listdir(log_path):
             if filename.startswith("testcase"):
                 file_path = join(log_path, filename)
@@ -229,6 +231,9 @@ class SubmissionTester:
 
         if res != TestResult.Succeed:
             self.remove_all_logs()
+            self.sub.result = JudgeStatus.ALL_FAILED
+            self.sub.save()
+            return False
         if res == TestResult.Timeout:
             self.sub.result = JudgeStatus.PROGRAM_TIMEOUT
             self.sub.save()
