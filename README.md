@@ -13,17 +13,18 @@ pip3 install -r requirements.txt
 
 ## run
 
-- __first run onl-controller__
 
-```
-./manage migrate
-./manage run
-```
-
-- __then run onl-frontent__
+- __build onl-frontent__
 
 for more details check [onl-fe](https://github.com/OpenNetLab/OpenNetLab-Edu-FE)
 
+
+- __run onl-controller__
+
+```
+./manage migrate
+FRONTEND="/frontend_path" ./manage run
+```
 - run nginx using local configuration
 
 ```
