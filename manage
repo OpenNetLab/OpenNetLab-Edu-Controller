@@ -9,9 +9,7 @@ function print_help {
 
 cmd=$1
 apps=("account" "announcement" "conf" "contest" "options" "problem" "submission")
-backend="http://127.0.0.1:7890"
-backend_cmd="python3 manage.py runserver"
-frontend_cmd="node build/dev-server.js"
+supervisor_cmd="supervisord -c ./deploy/supervisord.conf"
 
 function clean {
   rm -rf ./data/zips
@@ -33,21 +31,16 @@ function migrate {
 function run_onl {
   [[ ! -d data/log ]] && mkdir -p data/log && echo 'mkdir data/log'
 
-  # using postgres
-  # docker run -it -d -e POSTGRES_DB=onlinejudge -e POSTGRES_USER=onlinejudge -e POSTGRES_PASSWORD=onlinejudge -p 5435:5432 --name oj-postgres-dev postgres:10-alpine
-  
   if ! command which python3 | grep venv > /dev/null; then
     source venv/bin/activate
   fi
-  
-  # run dramatiq
-  if ! command pgrep dramatiq > /dev/null; then
-    echo "running dramatiq ..."
-    python3 manage.py rundramatiq &>data/log/dramatiq.log &
-    [[ $? -ne 0 ]] && echo "Error: fail to run dramatiq"
-  else
-    echo "dramatiq is already running"
-  fi
+
+
+  export TARGET=http://127.0.0.1:7890
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+  workdir=$(pwd)
+  process_num=$(($(nproc) * 2 - 1))
 
   # run redis
   if ! command docker container ls | grep redis > /dev/null; then
@@ -56,7 +49,7 @@ function run_onl {
       docker run -it -d -p 6380:6379 --name oj-redis-dev redis:4.0-alpine > /dev/null
     else
       container_id=$(docker ps -a | grep redis | awk '{print $1}')
-      docker container start $container_id
+      docker container start $container_id > /dev/null
     fi
     [[ $? -ne 0 ]] && echo "Error: fail to run redis docker"
   else
@@ -64,36 +57,20 @@ function run_onl {
   fi
 
   # run onl
-  if ! command pgrep -f "$backend_cmd" > /dev/null; then
+  if ! command pgrep -f "$supervisor_cmd" > /dev/null; then
     echo "running onl controller ..."
-    python3 manage.py runserver 0.0.0.0:7890 &>data/log/onl.log &
-    [[ $? -ne 0 ]] && echo "Error: fail to run onl controll"
+    WORKDIR=$workdir MAX_WORKER_NUM=$process_num $supervisor_cmd > /dev/null &
+    [[ $? -ne 0 ]] && echo "Error: fail to run onl"
   else
-    echo "onl controller is already running"
-  fi
-
-  # run frontend
-  if ! command pgrep -f "$frontend_cmd" > /dev/null; then
-    echo "running onl frontend ..."
-    if [[ -z $FRONTEND ]]; then
-      echo "environment variable FRONTEND is empty, you should run frontend yourself"
-    else
-      fe_log_path="$(pwd)/data/log/npm.log"
-      export NVM_DIR="$HOME/.nvm"
-      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-      (cd $FRONTEND; nvm use v8.12.0; TARGET=$backend npm run dev &> $fe_log_path &)
-      [[ $? -ne 0 ]] && echo "Error: fail to run onl frontend"
-    fi
-  else
-    echo "onl frontend is already running"
+    echo "onl is already running"
   fi
 }
 
 function stop_onl {
-  pkill dramatiq
-  pkill -f "$backend_cmd"
+  pkill -f "$supervisor_cmd"
+  [[ $? -eq 0 ]] && echo "stop supervisord"
   docker container stop oj-redis-dev > /dev/null
-  pkill -f "$frontend_cmd"
+  [[ $? -eq 0 ]] && echo "stop redis docker"
 }
 
 case $cmd in
