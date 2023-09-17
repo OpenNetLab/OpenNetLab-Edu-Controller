@@ -229,13 +229,13 @@ class SubmissionTester:
         print(f"running {tester_path}")
         res = run_command_with_timeout([tester_path, "--log", "--json"], self.sub.problem.timeout)
 
-        if res != TestResult.Succeed:
-            self.remove_all_logs()
-            self.sub.result = JudgeStatus.ALL_FAILED
-            self.sub.save()
-            return False
         if res == TestResult.Timeout:
             self.sub.result = JudgeStatus.PROGRAM_TIMEOUT
+            self.sub.save()
+            return False
+        elif res != TestResult.Succeed:
+            self.remove_all_logs()
+            self.sub.result = JudgeStatus.ALL_FAILED
             self.sub.save()
             return False
         elif res == TestResult.Error:
