@@ -60,7 +60,6 @@ function run_onl {
   # run onl
   if ! command pgrep -f "$supervisor_cmd" > /dev/null; then
     echo "running onl controller ..."
-    echo $FRONTEND
     FRONTEND=$FRONTEND WORKDIR=$workdir MAX_WORKER_NUM=$process_num $supervisor_cmd > /dev/null &
     [[ $? -ne 0 ]] && echo "Error: fail to run onl"
   else
