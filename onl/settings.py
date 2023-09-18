@@ -37,7 +37,7 @@ if production_env:
     # }
     REDIS_CONF = {
         "host": get_env("REDIS_HOST", "oj-redis"),
-        "port": get_env("REDIS_PORT", "6379")
+        "port": get_env("REDIS_PORT", "6380")
     }
     DEBUG = False
     ALLOWED_HOSTS = ['*']

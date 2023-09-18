@@ -9,7 +9,11 @@ source venv/bin/activate
 pip3 install -r requirements.txt
 ```
 
-- __install docker__
+- __install required programs__
+
+```
+sudo apt install redis supervisor nginx
+```
 
 ## run
 

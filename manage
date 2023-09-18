@@ -44,20 +44,6 @@ function run_onl {
   workdir=$(pwd)
   process_num=$(($(nproc) * 2 - 1))
 
-  # run redis
-  if ! command docker container ls | grep redis > /dev/null; then
-    echo "running redis in docker ..."
-    if ! command docker ps -a | grep redis > /dev/null; then
-      docker run -it -d -p 6380:6379 --name oj-redis-dev redis:4.0-alpine > /dev/null
-    else
-      container_id=$(docker ps -a | grep redis | awk '{print $1}')
-      docker container start $container_id > /dev/null
-    fi
-    [[ $? -ne 0 ]] && echo "Error: fail to run redis docker"
-  else
-    echo "redis is already running"
-  fi
-
   # run onl
   if ! command pgrep -f "$supervisor_cmd" > /dev/null; then
     echo "running onl controller ..."
