@@ -58,8 +58,6 @@ function run_onl {
 function stop_onl {
   pkill -f "$supervisor_cmd"
   [[ $? -eq 0 ]] && echo "stop supervisord"
-  docker container stop oj-redis-dev > /dev/null
-  [[ $? -eq 0 ]] && echo "stop redis docker"
 }
 
 case $cmd in
