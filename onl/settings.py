@@ -37,7 +37,7 @@ if production_env:
     # }
     REDIS_CONF = {
         "host": get_env("REDIS_HOST", "oj-redis"),
-        "port": get_env("REDIS_PORT", "6380")
+        "port": get_env("REDIS_PORT", "7777")
     }
     DEBUG = False
     ALLOWED_HOSTS = ['*']
@@ -63,7 +63,7 @@ else:
     # }
     REDIS_CONF = {
         "host": '127.0.0.1',
-        "port": 6380
+        "port": 7777
     }
     DEBUG = True
     ALLOWED_HOSTS = ["*"]

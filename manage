@@ -74,7 +74,7 @@ case $cmd in
     ;;
   "rebuild" )
     clean
-    rebuild
+    migrate
     ;;
   "run" )
     run_onl
