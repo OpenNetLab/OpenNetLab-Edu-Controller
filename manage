@@ -42,7 +42,8 @@ function run_onl {
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
   nvm use v8.12.0
   workdir=$(pwd)
-  process_num=$(($(nproc) * 2 - 1))
+  process_num=$(nproc)
+  echo "starting ${process_num} procs"
 
   # run onl
   if ! command pgrep -f "$supervisor_cmd" > /dev/null; then
