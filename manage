@@ -2,14 +2,17 @@
 
 function print_help {
   echo "usage:"
-  echo "    ./manage [makemigrations|migrate|clean|rebuild|run|stop]"
+  echo "    ./manage [makemigrations|migrate|clean|rebuild|run|debug|stop]"
 }
 
 [[ $# -ne 1 ]] && print_help && exit
 
 cmd=$1
+mode="release"
 apps=("account" "announcement" "conf" "contest" "options" "problem" "submission")
+supervisor_grep="supervisord -c ./deploy/supervisord"
 supervisor_cmd="supervisord -c ./deploy/supervisord.conf"
+supervisor_debug_cmd="supervisord -c ./deploy/supervisord-debug.conf"
 
 function clean {
   rm -rf ./data/zips
@@ -46,9 +49,13 @@ function run_onl {
   echo "starting ${process_num} procs"
 
   # run onl
-  if ! command pgrep -f "$supervisor_cmd" > /dev/null; then
+  if ! command pgrep -f "$supervisor_grep" > /dev/null; then
     echo "running onl controller ..."
-    FRONTEND=$FRONTEND WORKDIR=$workdir MAX_WORKER_NUM=$process_num $supervisor_cmd > /dev/null &
+    if [[ "$mode" == "debug" ]]; then
+      FRONTEND=$FRONTEND WORKDIR=$workdir MAX_WORKER_NUM=$process_num $supervisor_debug_cmd > /dev/null &
+    else
+      FRONTEND=$FRONTEND WORKDIR=$workdir MAX_WORKER_NUM=$process_num $supervisor_cmd > /dev/null &
+    fi
     [[ $? -ne 0 ]] && echo "Error: fail to run onl"
   else
     echo "onl is already running"
@@ -57,7 +64,7 @@ function run_onl {
 }
 
 function stop_onl {
-  pkill -f "$supervisor_cmd"
+  pkill -f "$supervisor_grep"
   [[ $? -eq 0 ]] && echo "stop supervisord"
 }
 
@@ -78,6 +85,10 @@ case $cmd in
     migrate
     ;;
   "run" )
+    run_onl
+    ;;
+  "debug" )
+    mode="debug"
     run_onl
     ;;
   "stop" )

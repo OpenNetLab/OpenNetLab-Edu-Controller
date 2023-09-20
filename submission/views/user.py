@@ -2,8 +2,10 @@ import ipaddress
 import hashlib
 import requests
 import logging
+import time
 from django.db import transaction
 from django.db.models import Q
+from django.core.cache import cache
 
 from account.decorators import login_required, check_contest_permission
 from account.models import User, UserProfile
@@ -70,11 +72,17 @@ class SubmissionAPI(APIView):
     @login_required
     def post(self, request):
         # print(request.data)
-        data = request.data
+        user_id = request.user.id
+        last_submit_time = cache.get(f"last_submit_time_{user_id}")
+        if last_submit_time:
+            current_time = time.time()
+            time_diff = current_time - last_submit_time
+            if time_diff < 15:
+                return self.error("Submissions are too frequent, please try again later")
 
-        error = self.throttling(request)
-        if error:
-            return self.error(error)
+        cache.set(f'last_submit_time_{user_id}', time.time())
+
+        data = request.data
 
         # get contset and check
         try:
